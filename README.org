@@ -1,0 +1,18 @@
+* pcap-mode.el
+
+Load an display a pcap file using the =tshark= utility.
+
+To copy it yourself, simply:
+
+|git clone https://github.com/orgcandman/pcap-mode.git
+
+* Setup
+
+In your =.emacs= initialization, add the following:
+
+|(add-to-list 'load-path "/path/to/pcap-mode")
+|(require 'pcap-mode)
+
+Then, when you open any .pcap file, the =tshark-executable= will be 
+invoked against the filename, and the contents displayed in the buffer.
+
