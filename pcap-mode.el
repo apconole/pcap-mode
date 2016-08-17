@@ -6,6 +6,7 @@
 ;; Version: 0.1
 ;; Keywords: pcap, packets, tcpdump, wireshark, tshark
 ;; Repository:
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -22,7 +23,7 @@
 ;; You should have received a copy of the GNU General Public License along
 ;; with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; ABOUT:
+;;; Commentary:
 ;; This is a pcap viewing mode.  It uses tshark underneath to parse and
 ;; display sections of the packets.
 
@@ -31,6 +32,8 @@
 
 ;;; Change Log:
 ;; * 2016-08-16 (aconole) Initial Version
+
+;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files")
 
