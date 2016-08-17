@@ -166,3 +166,4 @@
 
 (add-to-list 'auto-mode-alist '("\\.pcap\\'" . pcap-mode))
 (provide 'pcap-mode)
+;;; pcap-mode.el ends here
