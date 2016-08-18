@@ -35,6 +35,8 @@
 ;; * 2016-08-17 (syohex) Fix up the meta comments in the package
 ;; * 2016-08-18 (glallen01) Added pcap-list-tcp-conversations and
 ;;                          pcap-follow-tcp-stream
+;;              (aconole) Modify pcap-view-pkt-contents to follow tcp-stream
+;;                        in conversation mode
 
 ;;; Code:
 
@@ -130,20 +132,25 @@
   "View a specific packet in the current packet capture.  Invokes tshark 
    adding the `frame.number==` display filter."
   (interactive)
-  (let ((packet-number (packet-number-from-tshark-list)))
-    (let ((cmd (get-tshark-command (buffer-file-name)
-                                   (format "%s frame.number==%s"
-                                           tshark-single-packet-filter
-                                           packet-number)))
-          (temp-buffer-name (format "*Packet <%s from %s>*" packet-number
-                                    (buffer-file-name))))
-      (get-buffer-create temp-buffer-name)
-      (add-to-list 'pcap-packet-cleanup-list temp-buffer-name)
-      (let ((message-log-max nil))
-        (shell-command cmd temp-buffer-name))
-      (switch-to-buffer-other-window temp-buffer-name)
-      (special-mode)
-      )))
+  (let ((line2 (save-excursion (goto-line 2) (beginning-of-line)
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position)))))
+    (if (string= line2 "TCP Conversations")
+        (pcap-follow-tcp-stream)
+      (let ((packet-number (packet-number-from-tshark-list)))
+        (let ((cmd (get-tshark-command (buffer-file-name)
+                                       (format "%s frame.number==%s"
+                                               tshark-single-packet-filter
+                                               packet-number)))
+              (temp-buffer-name (format "*Packet <%s from %s>*" packet-number
+                                        (buffer-file-name))))
+          (get-buffer-create temp-buffer-name)
+          (add-to-list 'pcap-packet-cleanup-list temp-buffer-name)
+          (let ((message-log-max nil))
+            (shell-command cmd temp-buffer-name))
+          (switch-to-buffer-other-window temp-buffer-name)
+          (special-mode))))))
 
 (defun get-tshark-for-file (filename filters buffer)
   "Executes the tshark executable with `filename` and `filters` as arguments,
