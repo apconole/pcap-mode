@@ -28,7 +28,7 @@ When pcap-mode initially completes, it will display a summary-line listing of
 the packets.  This is comparable to the tshark output when run against the
 pcap file.  Example:
 
-[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-core.png][file:extras/pcapmode-core.png]]
+[[https://github.com/orgcandman/pcap-mode/blob/master/extra/pcapmode-core.png][file:extra/pcapmode-core.png]]
 
 The mode map (customizable via =pcap-mode-map= variable) is defaulted as 
 follows:
@@ -52,7 +52,7 @@ the =tshark-single-packet-filter= variable as well as the text
 
 Example:
 
-[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-packet.png][file:extras/pcapmode-packet.png]]
+[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-packet.png][file:extra/pcapmode-packet.png]]
 
 * Hooks and variables
 
