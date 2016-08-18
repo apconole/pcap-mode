@@ -32,6 +32,7 @@
 
 ;;; Change Log:
 ;; * 2016-08-16 (aconole) Initial Version
+;; * 2016-08-17 (syohex) Fix up the meta comments in the package
 
 ;;; Code:
 
