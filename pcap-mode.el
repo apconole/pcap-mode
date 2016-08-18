@@ -117,7 +117,10 @@
    the buffer to an error message."
   (if tshark-executable
       (shell-command (get-tshark-command filename filters) buffer)
-    (format "***ERROR: Tshark not found!")))
+    (let ((oldbuf (current-buffer)))
+      (switch-to-buffer buffer)
+      (setf (buffer-string) "**ERROR: tshark executable not found")
+      (switch-to-buffer oldbuf))))
 
 (defun pcap-reload-file ()
   "Reloads the current pcap file into the buffer with `tshark-executable`
