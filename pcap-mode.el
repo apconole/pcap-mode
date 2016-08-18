@@ -70,6 +70,7 @@
 (defvar pcap-mode-map
   (let ((kmap (make-keymap)))
     (define-key kmap (kbd "<return>") 'pcap-view-pkt-contents)
+    (define-key kmap (kbd "t") 'pcap-list-tcp-conversations)
     (define-key kmap (kbd "f") 'pcap-set-tshark-filter)
     (define-key kmap (kbd "\C-u f") 'pcap-set-tshark-single-packet-filter)
     (define-key kmap (kbd "s") 'pcap-set-tshark-single-packet-filter)
@@ -80,6 +81,37 @@
     (define-key kmap (kbd "q") (lambda () (interactive) (kill-buffer)))
     kmap)
   "Keymap for pcap major mode")
+
+(defun pcap-list-tcp-conversations ()
+  "List the tcp conversations within a PCAP"
+  (interactive)
+  (pcap-set-tshark-filter "-n -q -z conv,tcp"))
+
+(defun pcap-follow-tcp-stream ()
+  "From the list of tcp conversations, set the output filter to
+   follow the stream. (run pcap-list-tcp-conversations first)"
+  (interactive)
+  (let* ((line (buffer-substring-no-properties
+              (line-beginning-position)
+              (line-end-position)))
+         (connection ; (sip, sport, dip, dport)
+          (append (split-string (car (split-string line)) ":")
+                  (split-string (car (cddr (split-string line))) ":"))))
+         (pcap-set-tshark-filter
+            (replace-regexp-in-string "== " "=="
+                                    (mapconcat 'identity
+                                               (list
+                                                "-Y \""
+                                                "ip.addr=="
+                                                (car connection)
+                                                "&& tcp.port=="
+                                                (car (cdr connection))
+                                                "&& ip.addr=="
+                                                (car (cddr connection))
+                                                "&& tcp.port=="
+                                                (car (cdr (cddr connection)))
+                                                "\"")
+                                               " ")))))
 
 (defun get-tshark-command (filename filters)
   "Returns the string to pass to a shell command"
