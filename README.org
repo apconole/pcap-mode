@@ -28,7 +28,7 @@ When pcap-mode initially completes, it will display a summary-line listing of
 the packets.  This is comparable to the tshark output when run against the
 pcap file.  Example:
 
-[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-core.png][file:extras/pcapmode-core.png]]
+[[https://github.com/orgcandman/pcap-mode/blob/master/extra/pcapmode-core.png][file:extra/pcapmode-core.png]]
 
 The mode map (customizable via =pcap-mode-map= variable) is defaulted as 
 follows:
@@ -37,11 +37,12 @@ follows:
 |----------+--------------------------------------+-------------------------------------------------------------------------------|
 | <return> | pcap-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
 | f        | pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
-| C-u f    | pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
-| s        | pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
-| r        | pcap-reload-file                     | Reload the current pcap buffer.                                               |
-| C-c C-d  | anonymous debug function             | Display some debugging information                                            |
 | q        | anonymous call to kill-buffer        | Destroys the pcap buffer and all open packet buffers.                         |
+| r        | pcap-reload-file                     | Reload the current pcap buffer.                                               |
+| s        | pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
+| t        | pcap-list-tcp-conversations          | Sets the tshark options to follow tcp streams.                                |
+| C-u f    | pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
+| C-c C-d  | anonymous debug function             | Display some debugging information                                            |
 
 The filters are "smart" and will remember previous values set, making 
 switching between filters convenient.
@@ -52,7 +53,7 @@ the =tshark-single-packet-filter= variable as well as the text
 
 Example:
 
-[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-packet.png][file:extras/pcapmode-packet.png]]
+[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-packet.png][file:extra/pcapmode-packet.png]]
 
 * Hooks and variables
 
