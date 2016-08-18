@@ -4,15 +4,82 @@ Load an display a pcap file using the =tshark= utility.
 
 To copy it yourself, simply:
 
-|git clone https://github.com/orgcandman/pcap-mode.git
+#+NAME: setup_pcap_mode
+#+BEGIN_SRC sh
+ git clone https://github.com/orgcandman/pcap-mode.git
+#+END_SRC
 
 * Setup
 
 In your =.emacs= initialization, add the following:
 
-|(add-to-list 'load-path "/path/to/pcap-mode")
-|(require 'pcap-mode)
+#+NAME: elisp-to-initialize
+#+BEGIN_SRC elisp
+(add-to-list 'load-path "/path/to/pcap-mode")
+(require 'pcap-mode)
+#+END_SRC
 
 Then, when you open any .pcap file, the =tshark-executable= will be 
 invoked against the filename, and the contents displayed in the buffer.
 
+* Normally working with pcap-mode
+
+When pcap-mode initially completes, it will display a summary-line listing of
+the packets.  This is comparable to the tshark output when run against the
+pcap file.  Example:
+
+[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-core.png][file:extras/pcapmode-core.png]]
+
+The mode map (customizable via =pcap-mode-map= variable) is defaulted as 
+follows:
+
+| Key      | Function                             | Description                                                                   |
+|----------+--------------------------------------+-------------------------------------------------------------------------------|
+| <return> | pcap-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
+| f        | pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
+| C-u f    | pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
+| s        | pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
+| r        | pcap-reload-file                     | Reload the current pcap buffer.                                               |
+| C-c C-d  | anonymous debug function             | Display some debugging information                                            |
+| q        | anonymous call to kill-buffer        | Destroys the pcap buffer and all open packet buffers.                         |
+
+The filters are "smart" and will remember previous values set, making 
+switching between filters convenient.
+
+The packet viewer is a call to =tshark-executable= passing 
+the =tshark-single-packet-filter= variable as well as the text 
+*frame.number==%d* where %d is replaced with the packet number.
+
+Example:
+
+[[https://github.com/orgcandman/pcap-mode/extra/pcapmode-packet.png][file:extras/pcapmode-packet.png]]
+
+* Hooks and variables
+
+The following hooks are exposed by pcap-mode:
+
+| hook variable       | Hook entry notes                                |
+|---------------------+-------------------------------------------------|
+| pcap-mode-hook      | Hook run when pcap-mode starts                  |
+| pcap-mode-quit-hook | Hook run when pcap-mode window is closed.       |
+| pcap-reloaded-hook  | Hook run when the main pcap windows is reloaded |
+
+
+The following customizable variables exist
+| Variable Name                   | Description                                                  |
+|---------------------------------+--------------------------------------------------------------|
+| tshark-executable               | Path to the tshark binary                                    |
+| reload-pcap-when-filter-changes | Automatically reload pcap window buffer when changing filter |
+| tshark-filter                   | Filter used when reloading the pcap viewer window            |
+| tshark-single-packet-filter     | Filter used for single-packet viewing                        |
+| pcap-mode-map                   | Keymap for pcap-mode                                         |
+
+* TODOS
+
+The following list of todos should be eliminated as they are completed.
+
+** Syntax table to make the list view pretty
+
+** Unit tests? Maybe?
+
+** display filter building wizard
