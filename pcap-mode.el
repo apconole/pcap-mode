@@ -37,6 +37,8 @@
 ;;                          pcap-follow-tcp-stream
 ;;              (aconole) Modify pcap-view-pkt-contents to follow tcp-stream
 ;;                        in conversation mode
+;; * 2016-08-20 (aconole) Allow root users to interact with the tcp
+;;                        conversation following code.
 
 ;;; Code:
 
@@ -135,8 +137,13 @@
   (let ((line2 (save-excursion (goto-line 2) (beginning-of-line)
                                (buffer-substring-no-properties
                                 (line-beginning-position)
+                                (line-end-position))))
+        (line3 (save-excursion (goto-line 3) (beginning-of-line)
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
                                 (line-end-position)))))
-    (if (string= line2 "TCP Conversations")
+    (if (or (string= line2 "TCP Conversations")
+            (string= line3 "TCP Conversations"))
         (pcap-follow-tcp-stream)
       (let ((packet-number (packet-number-from-tshark-list)))
         (let ((cmd (get-tshark-command (buffer-file-name)
@@ -152,16 +159,47 @@
           (switch-to-buffer-other-window temp-buffer-name)
           (special-mode))))))
 
-(defun get-tshark-for-file (filename filters buffer)
+(defun get-tshark-for-file (filename filters buffer &optional interface)
   "Executes the tshark executable with `filename` and `filters` as arguments,
    storing the output in buffer.  If the tshark-executable is not found, set
    the buffer to an error message."
   (if tshark-executable
-      (shell-command (get-tshark-command filename filters) buffer)
+      (shell-command (get-tshark-command filename filters interface) buffer)
     (let ((oldbuf (current-buffer)))
       (switch-to-buffer buffer)
       (setf (buffer-string) "**ERROR: tshark executable not found")
       (switch-to-buffer oldbuf))))
+
+(defun pcap-capture-file (filename capturing-filters buffer)
+  (let ((interface (read-string "Interface? " '("any" . 1) nil
+                                capture-interface-history))
+        (capture-timeout (read-string
+                          "Stop Condition (duration in seconds)? "
+                          '("10" . 1) nil
+                          capture-stop-condition-history))
+        (capture-string (read-string "Capture string? " '("-s 65535 " . 1)
+                                     nil capturing-filters-history)))
+    (if (not capture-timeout)
+        (message "**ERROR: Need a capture timeout")
+      (progn
+        (message "Capturing [%s]" (format "%s" (get-tshark-command
+                                                filename
+                                                (format "-a duration:%s %s"
+                                                        capture-timeout
+                                                        capture-string)
+                                                interface)
+                                          ))
+        (get-tshark-for-file filename (format "-a duration:%s %s"
+                                              capture-timeout
+                                              capture-string)
+                             (current-buffer)
+                             interface)
+        (if (file-exists-p (buffer-file-name))
+            (progn
+              (revert-buffer)
+              (pcap-reload-file))
+          (setf (buffer-string)
+                "*** No file generated - can you capture?"))))))
 
 (defun pcap-reload-file ()
   "Reloads the current pcap file into the buffer with `tshark-executable`
@@ -169,7 +207,15 @@
   (interactive)
   (setq inhibit-read-only t)
   (setf (buffer-string) "")
-  (get-tshark-for-file (buffer-file-name) tshark-filter (current-buffer))
+  (if (file-exists-p (buffer-file-name))
+      (get-tshark-for-file (buffer-file-name) tshark-filter (current-buffer))
+    (let ((should-create-pcap (y-or-n-p
+                               (format
+                                "PCAP File (%s) doesn't exist.  Create?"
+                                (buffer-file-name)))))
+      (if should-create-pcap
+          (pcap-capture-file (buffer-file-name) tshark-filter (current-buffer))
+        (setf (buffer-string) "*** PCAP file does not exist"))))
   (not-modified)
   (setq inhibit-read-only nil)
   (read-only-mode)
