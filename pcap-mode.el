@@ -39,6 +39,8 @@
 ;;                        in conversation mode
 ;; * 2016-08-20 (aconole) Allow root users to interact with the tcp
 ;;                        conversation following code.
+;; * 2016-08-22 (aconole) Allow pcap-mode to start a capture when tramp mode
+;;                        strings are specified.
 
 ;;; Code:
 
@@ -66,6 +68,12 @@
   "Stores the history for tshark display pcap filters")
 (defvar tshark-single-packet-filter-history nil
   "Stores the history for tshark display single-packet filters")
+(defvar capture-interface-history nil
+  "Stores the interfaces used to capture pcap data")
+(defvar capture-stop-condition-history nil
+  "Stop condition history")
+(defvar capturing-filters-history nil
+  "Stores the history of capture filters")
 (defvar pcap-reloaded-hook nil
   "Hook list run whenever the pcap file is loaded or reloaded")
 (defvar pcap-mode-hook nil
@@ -119,9 +127,19 @@
                                                 "\"")
                                                " ")))))
 
-(defun get-tshark-command (filename filters)
+(defun get-tshark-command (filename filters &optional capture-interface)
   "Returns the string to pass to a shell command"
-  (format "%s -r %s %s" tshark-executable filename filters))
+  (let ((real-filename (if (tramp-tramp-file-p filename)
+                           (elt (tramp-dissect-file-name filename) 3)
+                           filename)))
+    (let ((input-flag (if capture-interface
+                          (format "-i %s -w %s" capture-interface
+                                  real-filename)
+                        (format "-r %s" real-filename)))
+          (tshark-name (if (tramp-tramp-file-p filename)
+                           (format "sudo %s" tshark-executable)
+                         tshark-executable)))
+      (format "%s %s %s" tshark-name input-flag filters))))
 
 (defun packet-number-from-tshark-list ()
   "Return the line number of a packet"
