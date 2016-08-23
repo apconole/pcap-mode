@@ -44,7 +44,8 @@
 
 ;;; Code:
 
-(defgroup pcap-mode nil "Major mode for viewing pcap files")
+(defgroup pcap-mode nil "Major mode for viewing pcap files"
+  :group 'data)
 
 (defcustom tshark-executable (executable-find "tshark")
   "Path to the tshark executable"
@@ -80,6 +81,8 @@
   "Hook list run when a pcap file is opened")
 (defvar pcap-mode-quit-hook nil
   "Hook list run when a pcap file is closed")
+
+(defvar pcap-packet-cleanup-list)
 
 (defvar pcap-mode-map
   (let ((kmap (make-keymap)))
@@ -152,11 +155,13 @@
   "View a specific packet in the current packet capture.  Invokes tshark 
    adding the `frame.number==` display filter."
   (interactive)
-  (let ((line2 (save-excursion (goto-line 2) (beginning-of-line)
+  (let ((line2 (save-excursion (goto-char (point-min))
+                               (forward-line 1) (beginning-of-line)
                                (buffer-substring-no-properties
                                 (line-beginning-position)
                                 (line-end-position))))
-        (line3 (save-excursion (goto-line 3) (beginning-of-line)
+        (line3 (save-excursion (goto-char (point-min))
+                               (forward-line 2) (beginning-of-line)
                                (buffer-substring-no-properties
                                 (line-beginning-position)
                                 (line-end-position)))))
@@ -172,6 +177,7 @@
                                         (buffer-file-name))))
           (get-buffer-create temp-buffer-name)
           (add-to-list 'pcap-packet-cleanup-list temp-buffer-name)
+          (message "%s" cmd)
           (let ((message-log-max nil))
             (shell-command cmd temp-buffer-name))
           (switch-to-buffer-other-window temp-buffer-name)
@@ -225,6 +231,8 @@
   (interactive)
   (setq inhibit-read-only t)
   (setf (buffer-string) "")
+  (mapc 'kill-buffer pcap-packet-cleanup-list)
+  (setq pcap-packet-cleanup-list '())
   (if (file-exists-p (buffer-file-name))
       (get-tshark-for-file (buffer-file-name) tshark-filter (current-buffer))
     (let ((should-create-pcap (y-or-n-p
@@ -234,7 +242,7 @@
       (if should-create-pcap
           (pcap-capture-file (buffer-file-name) tshark-filter (current-buffer))
         (setf (buffer-string) "*** PCAP file does not exist"))))
-  (not-modified)
+  (set-buffer-modified-p nil)
   (setq inhibit-read-only nil)
   (read-only-mode)
   (run-hooks 'pcap-reloaded-hook))
@@ -265,9 +273,10 @@
   "Major mode for viewing pcap files"
   (interactive)
   (kill-all-local-variables)
-  (make-variable-buffer-local 'tshark-filter)
-  (make-variable-buffer-local 'tshark-single-packet-filter)
-  (make-variable-buffer-local 'pcap-packet-cleanup-list)
+  (make-local-variable 'tshark-filter)
+  (make-local-variable 'tshark-single-packet-filter)
+  (make-local-variable 'pcap-packet-cleanup-list)
+  (setq pcap-packet-cleanup-list '())
   (use-local-map pcap-mode-map)
   (pcap-reload-file)
   (read-only-mode)
