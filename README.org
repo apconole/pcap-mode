@@ -33,22 +33,22 @@ pcap file.  Example:
 The mode map (customizable via =pcap-mode-map= variable) is defaulted as 
 follows:
 
-| Key      | Function                             | Description                                                                   |
-|----------+--------------------------------------+-------------------------------------------------------------------------------|
-| <return> | pcap-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
-| f        | pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
-| q        | anonymous call to kill-buffer        | Destroys the pcap buffer and all open packet buffers.                         |
-| r        | pcap-reload-file                     | Reload the current pcap buffer.                                               |
-| s        | pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
-| t        | pcap-list-tcp-conversations          | Sets the tshark options to follow tcp streams.                                |
-| C-u f    | pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
-| C-c C-d  | anonymous debug function             | Display some debugging information                                            |
+| Key      | Function                                        | Description                                                                   |
+|----------+-------------------------------------------------+-------------------------------------------------------------------------------|
+| <return> | pcap-mode--pcap-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
+| f        | pcap-mode--pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
+| q        | anonymous call to kill-buffer                   | Destroys the pcap buffer and all open packet buffers.                         |
+| r        | pcap-mode--pcap-reload-file                     | Reload the current pcap buffer.                                               |
+| s        | pcap-mode--pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
+| t        | pcap-mode--pcap-list-tcp-conversations          | Sets the tshark options to follow tcp streams.                                |
+| C-u f    | pcap-mode--pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
+| C-c C-d  | anonymous debug function                        | Display some debugging information                                            |
 
 The filters are "smart" and will remember previous values set, making 
 switching between filters convenient.
 
-The packet viewer is a call to =tshark-executable= passing 
-the =tshark-single-packet-filter= variable as well as the text 
+The packet viewer is a call to =pcap-mode--tshark-executable= passing 
+the =pcap-mode--tshark-single-packet-filter= variable as well as the text 
 *frame.number==%d* where %d is replaced with the packet number.
 
 Example:
@@ -59,21 +59,21 @@ Example:
 
 The following hooks are exposed by pcap-mode:
 
-| hook variable       | Hook entry notes                                |
-|---------------------+-------------------------------------------------|
-| pcap-mode-hook      | Hook run when pcap-mode starts                  |
-| pcap-mode-quit-hook | Hook run when pcap-mode window is closed.       |
-| pcap-reloaded-hook  | Hook run when the main pcap windows is reloaded |
+| hook variable                  | Hook entry notes                                |
+|--------------------------------+-------------------------------------------------|
+| pcap-mode--pcap-mode-hook      | Hook run when pcap-mode starts                  |
+| pcap-mode--pcap-mode-quit-hook | Hook run when pcap-mode window is closed.       |
+| pcap-mode--pcap-reloaded-hook  | Hook run when the main pcap windows is reloaded |
 
 
 The following customizable variables exist
-| Variable Name                   | Description                                                  |
-|---------------------------------+--------------------------------------------------------------|
-| tshark-executable               | Path to the tshark binary                                    |
-| reload-pcap-when-filter-changes | Automatically reload pcap window buffer when changing filter |
-| tshark-filter                   | Filter used when reloading the pcap viewer window            |
-| tshark-single-packet-filter     | Filter used for single-packet viewing                        |
-| pcap-mode-map                   | Keymap for pcap-mode                                         |
+| Variable Name                              | Description                                                  |
+|--------------------------------------------+--------------------------------------------------------------|
+| pcap-mode--tshark-executable               | Path to the tshark binary                                    |
+| pcap-mode--reload-pcap-when-filter-changes | Automatically reload pcap window buffer when changing filter |
+| pcap-mode--tshark-filter                   | Filter used when reloading the pcap viewer window            |
+| pcap-mode--tshark-single-packet-filter     | Filter used for single-packet viewing                        |
+| pcap-mode--pcap-mode-keymap                | Keymap for pcap-mode                                         |
 
 * TODOS
 
