@@ -132,6 +132,7 @@
 
 (defun get-tshark-command (filename filters &optional capture-interface)
   "Returns the string to pass to a shell command"
+  (require 'tramp)
   (let ((real-filename (if (tramp-tramp-file-p filename)
                            (elt (tramp-dissect-file-name filename) 3)
                            filename)))
