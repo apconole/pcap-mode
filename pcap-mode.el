@@ -49,6 +49,7 @@
 ;;                        Autoload the alist call
 ;;                        checkdoc
 ;; * 2016-08-29 (aconole) Shell-quote the file and interface names
+;;                        last of the checkdoc issues.
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
@@ -86,6 +87,8 @@
   "Stop condition history.")
 (defvar pcap-mode--capturing-filters-history nil
   "Stores the history of capture filters.")
+(defvar pcap-mode--pcap-search-text-history nil
+  "Stores the history of the frame search text.")
 
 ;;;###autoload
 (defvar pcap-mode-hook nil
@@ -107,6 +110,7 @@
     (define-key kmap (kbd "<return>") 'pcap-mode-view-pkt-contents)
     (define-key kmap (kbd "t") 'pcap-mode-toggle-tcp-conversation-view)
     (define-key kmap (kbd "f") 'pcap-mode-set-tshark-filter)
+    (define-key kmap (kbd "c") 'pcap-search-frames)
     (define-key kmap (kbd "\C-u f")
       'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "s") 'pcap-mode-set-tshark-single-packet-filter)
@@ -118,8 +122,20 @@
     kmap)
   "Keymap for pcap major mode.")
 
+(defun pcap-search-frames ()
+  "Use tshark to search through the frames for text."
+  (interactive)
+  (let ((pcap-search-text (read-string
+                           "Filter text? " '("" . 1) nil
+                           pcap-mode--pcap-search-text-history)))
+    (pcap-mode-set-tshark-filter (format "frame contains %s"
+      (if (string= (substring pcap-search-text 0 1) "\"")
+          pcap-search-text
+      (shell-quote-argument pcap-search-text)))
+                                 )))
+
 (defun pcap-mode--viewing-tcp-conversations ()
-  "Returns t when viewing TCP conversations in the current buffer."
+  "Return t when viewing TCP conversations in the current buffer."
   (let ((line2 (save-excursion (goto-char (point-min))
                                (forward-line 1) (beginning-of-line)
                                (buffer-substring-no-properties
@@ -148,7 +164,7 @@
     (pcap-mode-list-tcp-conversations)))
 
 (defun pcap-mode-follow-tcp-stream ()
-  "From the list of tcp conversations, set the output filter to follow the stream.
+  "Set the output filter to follow a stream from the list of tcp conversations.
 Requires running pcap-list-tcp-conversations first."
   (interactive)
   (let* ((line (buffer-substring-no-properties
@@ -175,11 +191,13 @@ Requires running pcap-list-tcp-conversations first."
 
 (defun pcap-mode--get-tshark-command (filename filters &optional
                                                capture-interface)
-  "Returns the string to pass to a shell command.
-This will pass
-FILENAME either as a read interface or a write interface, based on
-the value of CAPTURE-INTERFACE.  The value of FILTERS will not be
-escaped to allow passing important filtering arguments (such as -Y)."
+  "Return the string to pass to a shell command.
+This will pass FILENAME either as a read interface or a write interface.
+The value of FILTERS will be passed, unescaped, to the shell command.
+This is to allow important filter arguments (such as -Y).
+The value of CAPTURE-INTERFACE will determine whether to start capturing.
+A value of nil means FILENAME is a valid pcap file.  Non-nil indicates the
+interface from which a capture should be started."
   (require 'tramp)
   (let ((real-filename (if (tramp-tramp-file-p filename)
                            (elt (tramp-dissect-file-name filename) 3)
@@ -222,9 +240,10 @@ Invokes tshark  adding the `frame.number==` display filter."
 
 (defun pcap-mode--get-tshark-for-file (filename filters buffer &optional
                                                 interface)
-  "Executes the tshark executable with FILENAME and FILTERS as arguments,
-storing the output in buffer.  If the `pcap-mode-tshark-executable` is not
-found, set the buffer to an error message."
+  "Execute the tshark executable with FILENAME and FILTERS as arguments.
+Output is stored to BUFFER.  If the `pcap-mode-tshark-executable`
+is not found, set the buffer to an error message.  A non-nil INTERFACE
+means to capture to the FILENAME instead."
   (if pcap-mode-tshark-executable
       (shell-command (pcap-mode--get-tshark-command filename filters interface)
                      buffer)
@@ -267,8 +286,7 @@ The capture will prompt for a timeout, an interface, and a capture filter."
                 "*** No file generated - can you capture?"))))))
 
 (defun pcap-mode-reload-file ()
-  "Reloads the current pcap file into the buffer with
-`pcap-mode-tshark-executable` and the current buffer filters."
+  "Reload the current pcap file using the value stored for filters."
   (interactive)
   (setq inhibit-read-only t)
   (setf (buffer-string) "")
