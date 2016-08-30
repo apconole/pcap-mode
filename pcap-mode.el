@@ -105,7 +105,7 @@
 (defvar pcap-mode-map
   (let ((kmap (make-keymap)))
     (define-key kmap (kbd "<return>") 'pcap-mode-view-pkt-contents)
-    (define-key kmap (kbd "t") 'pcap-mode-list-tcp-conversations)
+    (define-key kmap (kbd "t") 'pcap-mode-toggle-tcp-conversation-view)
     (define-key kmap (kbd "f") 'pcap-mode-set-tshark-filter)
     (define-key kmap (kbd "\C-u f")
       'pcap-mode-set-tshark-single-packet-filter)
@@ -118,10 +118,34 @@
     kmap)
   "Keymap for pcap major mode.")
 
+(defun pcap-mode--viewing-tcp-conversations ()
+  "Returns t when viewing TCP conversations in the current buffer."
+  (let ((line2 (save-excursion (goto-char (point-min))
+                               (forward-line 1) (beginning-of-line)
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position))))
+        (line3 (save-excursion (goto-char (point-min))
+                               (forward-line 2) (beginning-of-line)
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position)))))
+    (if (or (string= line2 "TCP Conversations")
+            (string= line3 "TCP Conversations"))
+        t
+      nil)))
+
 (defun pcap-mode-list-tcp-conversations ()
   "List the tcp conversations within a PCAP."
   (interactive)
   (pcap-mode-set-tshark-filter "-n -q -z conv,tcp"))
+
+(defun pcap-mode-toggle-tcp-conversation-view ()
+  "List the tcp conversations within a PCAP, or clear the list."
+  (interactive)
+  (if (pcap-mode--viewing-tcp-conversations)
+      (pcap-mode-set-tshark-filter "")
+    (pcap-mode-list-tcp-conversations)))
 
 (defun pcap-mode-follow-tcp-stream ()
   "From the list of tcp conversations, set the output filter to follow the stream.
@@ -180,32 +204,21 @@ escaped to allow passing important filtering arguments (such as -Y)."
   "View a specific packet in the current packet capture.
 Invokes tshark  adding the `frame.number==` display filter."
   (interactive)
-  (let ((line2 (save-excursion (goto-char (point-min))
-                               (forward-line 1) (beginning-of-line)
-                               (buffer-substring-no-properties
-                                (line-beginning-position)
-                                (line-end-position))))
-        (line3 (save-excursion (goto-char (point-min))
-                               (forward-line 2) (beginning-of-line)
-                               (buffer-substring-no-properties
-                                (line-beginning-position)
-                                (line-end-position)))))
-    (if (or (string= line2 "TCP Conversations")
-            (string= line3 "TCP Conversations"))
-        (pcap-mode-follow-tcp-stream)
-      (let ((packet-number (pcap-mode--packet-number-from-tshark-list)))
-        (let ((cmd (pcap-mode--get-tshark-command (buffer-file-name)
-                                                  (format "%s frame.number==%s"
-                                                          pcap-mode-tshark-single-packet-filter
-                                                          packet-number)))
-              (temp-buffer-name (format "*Packet <%s from %s>*" packet-number
-                                        (buffer-file-name))))
-          (get-buffer-create temp-buffer-name)
-          (add-to-list 'pcap-mode--pcap-packet-cleanup-list temp-buffer-name)
-          (let ((message-log-max nil))
-            (shell-command cmd temp-buffer-name))
-          (switch-to-buffer-other-window temp-buffer-name)
-          (special-mode))))))
+  (if (pcap-mode--viewing-tcp-conversations)
+      (pcap-mode-follow-tcp-stream)
+    (let ((packet-number (pcap-mode--packet-number-from-tshark-list)))
+      (let ((cmd (pcap-mode--get-tshark-command (buffer-file-name)
+                                                (format "%s frame.number==%s"
+                                                        pcap-mode-tshark-single-packet-filter
+                                                        packet-number)))
+            (temp-buffer-name (format "*Packet <%s from %s>*" packet-number
+                                      (buffer-file-name))))
+        (get-buffer-create temp-buffer-name)
+        (add-to-list 'pcap-mode--pcap-packet-cleanup-list temp-buffer-name)
+        (let ((message-log-max nil))
+          (shell-command cmd temp-buffer-name))
+        (switch-to-buffer-other-window temp-buffer-name)
+        (special-mode)))))
 
 (defun pcap-mode--get-tshark-for-file (filename filters buffer &optional
                                                 interface)
