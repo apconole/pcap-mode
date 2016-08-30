@@ -48,6 +48,7 @@
 ;; * 2016-08-29 (aconole) Renamed all pcap-mode variables (again)
 ;;                        Autoload the alist call
 ;;                        checkdoc
+;; * 2016-08-29 (aconole) Shell-quote the file and interface names
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
@@ -160,9 +161,9 @@ escaped to allow passing important filtering arguments (such as -Y)."
                            (elt (tramp-dissect-file-name filename) 3)
                            filename)))
     (let ((input-flag (if capture-interface
-                          (format "-i %s -w %s" capture-interface
-                                  real-filename)
-                        (format "-r %s" real-filename)))
+                          (format "-i %s -w %s" (shell-quote-argument capture-interface)
+                                  (shell-quote-argument real-filename))
+                        (format "-r %s" (shell-quote-argument real-filename))))
           (tshark-name (if (tramp-tramp-file-p filename)
                            (format "sudo %s" pcap-mode-tshark-executable)
                          pcap-mode-tshark-executable)))
