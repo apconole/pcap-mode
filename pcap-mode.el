@@ -50,6 +50,7 @@
 ;;                        checkdoc
 ;; * 2016-08-29 (aconole) Shell-quote the file and interface names
 ;;                        last of the checkdoc issues.
+;; * 2016-09-12 (aconole) TCP Converstation refactoring
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
@@ -151,6 +152,18 @@
         t
       nil)))
 
+(defun pcap-mode--switches (arg)
+  "Return ARG if it begins with '-', and nil otherwise."
+  (if (string= (substring arg 0 1) "-")
+      arg
+    nil))
+
+(defun pcap-mode--no-switches (arg)
+  "Inverse of `pcap-mode--switches`"
+  (if (pcap-mode--switches arg)
+      nil
+    arg))
+
 (defun pcap-mode-list-tcp-conversations ()
   "List the tcp conversations within a PCAP."
   (interactive)
@@ -163,6 +176,14 @@
       (pcap-mode-set-tshark-filter "")
     (pcap-mode-list-tcp-conversations)))
 
+(defun pcap-mode--connection-string (line)
+  "Formats a connection string LINE from a tcp conversation to a list.
+The list will be (ip/ip6 source-ip source-port dest-ip dest-port)."
+  (if (eq (length (split-string line ":")) 3)
+      (append (list "ip") (split-string (car (split-string line)) ":")
+              (split-string (car (cddr (split-string line))) ":"))
+    nil))
+
 (defun pcap-mode-follow-tcp-stream ()
   "Set the output filter to follow a stream from the list of tcp conversations.
 Requires running pcap-list-tcp-conversations first."
@@ -170,24 +191,26 @@ Requires running pcap-list-tcp-conversations first."
   (let* ((line (buffer-substring-no-properties
               (line-beginning-position)
               (line-end-position)))
-         (connection ; (sip, sport, dip, dport)
-          (append (split-string (car (split-string line)) ":")
-                  (split-string (car (cddr (split-string line))) ":"))))
+         (connection (pcap-mode--connection-string line)))
+    (if connection
          (pcap-mode-set-tshark-filter
             (replace-regexp-in-string "== " "=="
                                     (mapconcat 'identity
                                                (list
                                                 "-Y \""
-                                                "ip.addr=="
-                                                (car connection)
-                                                "&& tcp.port=="
+                                                (format "%s.addr=="
+                                                        (car connection))
                                                 (car (cdr connection))
-                                                "&& ip.addr=="
-                                                (car (cddr connection))
                                                 "&& tcp.port=="
+                                                (car (cddr connection))
+                                                (format "&& %s.addr=="
+                                                        (car connection))
                                                 (car (cdr (cddr connection)))
+                                                "&& tcp.port=="
+                                                (car (cddr (cddr connection)))
                                                 "\"")
-                                               " ")))))
+                                               " ")))
+      (message "ERROR: Unable to determine connection information"))))
 
 (defun pcap-mode--get-tshark-command (filename filters &optional
                                                capture-interface)
