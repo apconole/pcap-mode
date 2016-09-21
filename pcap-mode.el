@@ -51,6 +51,7 @@
 ;; * 2016-08-29 (aconole) Shell-quote the file and interface names
 ;;                        last of the checkdoc issues.
 ;; * 2016-09-12 (aconole) TCP Converstation refactoring
+;; * 2016-09-21 (aconole) Add IPv6 support for TCP conversation tracking
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
@@ -182,7 +183,17 @@ The list will be (ip/ip6 source-ip source-port dest-ip dest-port)."
   (if (eq (length (split-string line ":")) 3)
       (append (list "ip") (split-string (car (split-string line)) ":")
               (split-string (car (cddr (split-string line))) ":"))
-    nil))
+    (let* ((elmts (split-string line))
+           (ipsrc (butlast (split-string (car elmts) ":")))
+           (ipsrcp (last (split-string (car elmts) ":")))
+           (ipdst (butlast (split-string (car (cddr elmts)) ":")))
+           (ipdstp (last (split-string (car (cddr elmts)) ":")))
+           )
+      (append (list "ipv6")
+              (list (mapconcat 'identity ipsrc ":"))
+              ipsrcp
+              (list (mapconcat 'identity ipdst ":"))
+              ipdstp))))
 
 (defun pcap-mode-follow-tcp-stream ()
   "Set the output filter to follow a stream from the list of tcp conversations.
