@@ -112,7 +112,7 @@
     (define-key kmap (kbd "<return>") 'pcap-mode-view-pkt-contents)
     (define-key kmap (kbd "t") 'pcap-mode-toggle-tcp-conversation-view)
     (define-key kmap (kbd "f") 'pcap-mode-set-tshark-filter)
-    (define-key kmap (kbd "c") 'pcap-search-frames)
+    (define-key kmap (kbd "c") 'pcap-mode-search-frames)
     (define-key kmap (kbd "\C-u f")
       'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "s") 'pcap-mode-set-tshark-single-packet-filter)
@@ -124,7 +124,7 @@
     kmap)
   "Keymap for pcap major mode.")
 
-(defun pcap-search-frames ()
+(defun pcap-mode-search-frames ()
   "Use tshark to search through the frames for text."
   (interactive)
   (let ((pcap-search-text (read-string
