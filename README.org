@@ -33,16 +33,17 @@ pcap file.  Example:
 The mode map (customizable via =pcap-mode-map= variable) is defaulted as 
 follows:
 
-| Key      | Function                                        | Description                                                                   |
-|----------+-------------------------------------------------+-------------------------------------------------------------------------------|
-| <return> | pcap-mode--pcap-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
-| f        | pcap-mode--pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
-| q        | anonymous call to kill-buffer                   | Destroys the pcap buffer and all open packet buffers.                         |
-| r        | pcap-mode--pcap-reload-file                     | Reload the current pcap buffer.                                               |
-| s        | pcap-mode--pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
-| t        | pcap-mode--pcap-list-tcp-conversations          | Sets the tshark options to follow tcp streams.                                |
-| C-u f    | pcap-mode--pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
-| C-c C-d  | anonymous debug function                        | Display some debugging information                                            |
+| Key      | Function                                       | Description                                                                   |
+|----------+------------------------------------------------+-------------------------------------------------------------------------------|
+| <return> | pcap-mode--pcap-view-pkt-contents              | Pop up a separate buffer with the contents of a specific packet               |
+| c        | pcap-mode-search-frames                        | Search frame contents                                                         |
+| f        | pcap-mode-pcap-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
+| q        | anonymous call to kill-buffer                  | Destroys the pcap buffer and all open packet buffers.                         |
+| r        | pcap-mode-pcap-reload-file                     | Reload the current pcap buffer.                                               |
+| s        | pcap-mode-pcap-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
+| t        | pcap-mode-pcap-toggle-tcp-conversation-view    | Sets the tshark options to follow tcp streams.                                |
+| C-u f    | pcap-mode-pcap-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
+| C-c C-d  | anonymous debug function                       | Display some debugging information                                            |
 
 The filters are "smart" and will remember previous values set, making 
 switching between filters convenient.
