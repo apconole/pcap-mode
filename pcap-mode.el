@@ -114,7 +114,8 @@ Lines of file must be in the following form:
 (defvar pcap-mode-quit-hook nil
   "Hook list run when a pcap file is closed.")
 
-(defvar pcap-mode--pcap-packet-cleanup-list)
+(defvar pcap-mode--pcap-packet-cleanup-list nil
+  "List of buffers to be killed on exit.")
 
 ;;;###autoload
 (defvar pcap-mode-map
@@ -374,29 +375,31 @@ Argument FILTER-VALUE corresponds to the exact set of filters passed to `pcap-mo
   (if pcap-mode-reload-pcap-when-filter-changes
       (pcap-mode-reload-file)))
 
+(defmacro pcap-mode-with-dfilters-file (&rest body)
+  "Execute BODY in buffer containing `pcap-mode-dfilters-file'.
+Throw an error if that file can't be loaded.'"
+  `(if (file-readable-p pcap-mode-dfilters-file)
+       (with-temp-buffer
+	 (insert-file-contents pcap-mode-dfilters-file)
+	 (goto-char (point-min))
+	 ,@body)
+     (error "Can't read dfilters file: %s" pcap-mode-dfilters-file)))
+
 (defun pcap-mode-set-named-filter (filter-name)
   "Choose a predefined filter and apply it.
-FILTER-NAME is the name of a filters obtained from the `pcap-mode-dfilters-file'."
+FILTER-NAME is the name of a named filter defined in `pcap-mode-dfilters-file'."
   (interactive (list (funcall (if (fboundp 'ido-completing-read)
 				  'ido-completing-read
 				'completing-read)
-		      "Filter name: "
-		      (if (file-readable-p pcap-mode-dfilters-file)
-			  (with-temp-buffer
-			    (insert-file-contents pcap-mode-dfilters-file)
-			    (goto-char (point-min))
-			    (cl-loop while (re-search-forward "^\"\\([^\"]*\\)\"" nil t)
-				     collect (match-string 1)))
-			(error "Can't read dfilters file: %s" pcap-mode-dfilters-file)))))
+			      "Filter name: "
+			      (pcap-mode-with-dfilters-file
+			       (cl-loop while (re-search-forward "^\"\\([^\"]*\\)\"" nil t)
+					collect (match-string 1))))))
   (let (filter)
-    (if (file-readable-p pcap-mode-dfilters-file)
-	(progn (with-temp-buffer
-		 (insert-file-contents pcap-mode-dfilters-file)
-		 (goto-char (point-min))
-		 (search-forward filter-name)
-		 (setq filter (buffer-substring-no-properties (+ 2 (point)) (line-end-position))))
-	       (pcap-mode-set-tshark-filter (concat "'" filter "'")))
-      (error "Can't read dfilters file: %s" pcap-mode-dfilters-file))))
+    (pcap-mode-with-dfilters-file
+     (search-forward filter-name)
+     (setq filter (buffer-substring-no-properties (+ 2 (point)) (line-end-position))))
+    (pcap-mode-set-tshark-filter (concat "'" filter "'"))))
 
 (defun pcap-mode-clear-filter nil
   "Clear the current filter."
