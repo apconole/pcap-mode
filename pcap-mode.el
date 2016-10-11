@@ -52,6 +52,8 @@
 ;;                        last of the checkdoc issues.
 ;; * 2016-09-12 (aconole) TCP Converstation refactoring
 ;; * 2016-09-21 (aconole) Add IPv6 support for TCP conversation tracking
+;; * 2016-10-11 (vapniks) Add `pcap-mode-set-named-filter' and `pcap-mode-clear-filter'.
+;;                        Also new option `pcap-mode-dfilters-file' and macro `pcap-mode-with-dfilters-file'.
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
