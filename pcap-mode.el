@@ -119,6 +119,7 @@
       'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "s") 'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "r") 'pcap-mode-reload-file)
+    (define-key kmap (kbd "g") 'pcap-mode-clear-filter)
     (define-key kmap (kbd "\C-c \C-d") (lambda () (interactive)
 					 (message "tshark filter \"%s\""
 						  pcap-mode-tshark-filter)))
@@ -363,6 +364,11 @@ Argument FILTER-VALUE corresponds to the exact set of filters passed to `pcap-mo
   (setq-local pcap-mode-tshark-filter filter-value)
   (if pcap-mode-reload-pcap-when-filter-changes
       (pcap-mode-reload-file)))
+
+(defun pcap-mode-clear-filter nil
+  "Clear the current filter."
+  (interactive)
+  (pcap-mode-set-tshark-filter ""))
 
 (defun pcap-mode--pcap-mode-cleanup ()
   "Cleanup function run whenever a pcap buffer is closed."
