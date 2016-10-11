@@ -38,6 +38,7 @@ follows:
 | <return> | pcap-mode-view-pkt-contents               | Pop up a separate buffer with the contents of a specific packet               |
 | c        | pcap-mode-search-frames                   | Search frame contents                                                         |
 | f        | pcap-mode-set-tshark-filter               | Change the buffer local display filter applied to the pcap file.              |
+| F        | pcap-mode-set-named-filter                | Choose a predefined filter and apply it.                                      |
 | g        | pcap-mode-clear-filter                    | Clear the current filter.                                                     |
 | q        | anonymous call to kill-buffer             | Destroys the pcap buffer and all open packet buffers.                         |
 | r        | pcap-mode-reload-file                     | Reload the current pcap buffer.                                               |
@@ -69,12 +70,13 @@ The following hooks are exposed by pcap-mode:
 
 
 The following customizable variables exist
-| Variable Name                             | Description                                                  |
-|-------------------------------------------+--------------------------------------------------------------|
-| pcap-mode-tshark-executable               | Path to the tshark binary                                    |
-| pcap-mode-reload-pcap-when-filter-changes | Automatically reload pcap window buffer when changing filter |
-| pcap-mode-tshark-filter                   | Filter used when reloading the pcap viewer window            |
-| pcap-mode-tshark-single-packet-filter     | Filter used for single-packet viewing                        |
+| Variable Name                             | Description                                                                |
+|-------------------------------------------+----------------------------------------------------------------------------|
+| pcap-mode-tshark-executable               | Path to the tshark binary                                                  |
+| pcap-mode-reload-pcap-when-filter-changes | Automatically reload pcap window buffer when changing filter               |
+| pcap-mode-tshark-filter                   | Filter used when reloading the pcap viewer window                          |
+| pcap-mode-tshark-single-packet-filter     | Filter used for single-packet viewing                                      |
+| pcap-mode-dfilters-file                   | Location of wireshark dfilters file containing predefined display filters. |
 
 * TODOS
 
