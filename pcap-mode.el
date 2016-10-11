@@ -72,12 +72,14 @@
 ;;;###autoload
 (defcustom pcap-mode-tshark-filter ""
   "Filter to apply to tshark invocations."
-  :type 'string)
+  :type 'string
+  :group 'pcap-mode)
 
 ;;;###autoload
 (defcustom pcap-mode-tshark-single-packet-filter "-V -Y"
   "Filter to apply when displaying individual packets."
-  :type 'string)
+  :type 'string
+  :group 'pcap-mode)
 
 (defvar pcap-mode--tshark-filter-history nil
   "Stores the history for tshark display pcap filters.")
@@ -118,8 +120,8 @@
     (define-key kmap (kbd "s") 'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "r") 'pcap-mode-reload-file)
     (define-key kmap (kbd "\C-c \C-d") (lambda () (interactive)
-                                        (message "tshark filter \"%s\""
-                                                 pcap-mode-tshark-filter)))
+					 (message "tshark filter \"%s\""
+						  pcap-mode-tshark-filter)))
     (define-key kmap (kbd "q") (lambda () (interactive) (kill-buffer)))
     kmap)
   "Keymap for pcap major mode.")
@@ -131,9 +133,9 @@
                            "Filter text? " '("" . 1) nil
                            pcap-mode--pcap-search-text-history)))
     (pcap-mode-set-tshark-filter (format "frame contains %s"
-      (if (string= (substring pcap-search-text 0 1) "\"")
-          pcap-search-text
-      (shell-quote-argument pcap-search-text)))
+					 (if (string= (substring pcap-search-text 0 1) "\"")
+					     pcap-search-text
+					   (shell-quote-argument pcap-search-text)))
                                  )))
 
 (defun pcap-mode--viewing-tcp-conversations ()
