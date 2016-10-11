@@ -72,22 +72,12 @@
 ;;;###autoload
 (defcustom pcap-mode-tshark-filter ""
   "Filter to apply to tshark invocations."
-  :type 'string
-  :group 'pcap-mode)
+  :type 'string)
 
 ;;;###autoload
 (defcustom pcap-mode-tshark-single-packet-filter "-V -Y"
   "Filter to apply when displaying individual packets."
-  :type 'string
-  :group 'pcap-mode)
-
-;;;###autoload
-(defcustom pcap-mode-dfilters-file "~/.wireshark/dfilters"
-  "Location of wireshark dfilters file containing predefined display filters.
-Lines of file must be in the following form:
-\"<NAME>\" <FILTER EXPRESSION>"
-  :type 'file
-  :group 'pcap-mode)
+  :type 'string)
 
 (defvar pcap-mode--tshark-filter-history nil
   "Stores the history for tshark display pcap filters.")
@@ -122,16 +112,14 @@ Lines of file must be in the following form:
     (define-key kmap (kbd "<return>") 'pcap-mode-view-pkt-contents)
     (define-key kmap (kbd "t") 'pcap-mode-toggle-tcp-conversation-view)
     (define-key kmap (kbd "f") 'pcap-mode-set-tshark-filter)
-    (define-key kmap (kbd "F") 'pcap-mode-set-named-filter)
     (define-key kmap (kbd "c") 'pcap-mode-search-frames)
     (define-key kmap (kbd "\C-u f")
       'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "s") 'pcap-mode-set-tshark-single-packet-filter)
     (define-key kmap (kbd "r") 'pcap-mode-reload-file)
-    (define-key kmap (kbd "g") 'pcap-mode-clear-filter)
     (define-key kmap (kbd "\C-c \C-d") (lambda () (interactive)
-					 (message "tshark filter \"%s\""
-						  pcap-mode-tshark-filter)))
+                                        (message "tshark filter \"%s\""
+                                                 pcap-mode-tshark-filter)))
     (define-key kmap (kbd "q") (lambda () (interactive) (kill-buffer)))
     kmap)
   "Keymap for pcap major mode.")
@@ -373,32 +361,6 @@ Argument FILTER-VALUE corresponds to the exact set of filters passed to `pcap-mo
   (setq-local pcap-mode-tshark-filter filter-value)
   (if pcap-mode-reload-pcap-when-filter-changes
       (pcap-mode-reload-file)))
-
-(defun pcap-mode-set-named-filter (filter-name)
-  "Choose a predefined filter and apply it.
-Filters are obtained from the `pcap-mode-dfilters-file'."
-  (interactive (list (ido-completing-read
-		      "Filter name: "
-		      (if (file-readable-p pcap-mode-dfilters-file)
-			  (with-temp-buffer
-			    (insert-file-contents pcap-mode-dfilters-file)
-			    (goto-char (point-min))
-			    (cl-loop while (re-search-forward "^\"\\([^\"]*\\)\"" nil t)
-				     collect (match-string 1)))
-			(error "Can't read dfilters file: %s" pcap-mode-dfilters-file)))))
-  (let (filter)
-    (if (file-readable-p pcap-mode-dfilters-file)
-	(progn (with-temp-buffer
-		 (insert-file-contents pcap-mode-dfilters-file)
-		 (goto-char (point-min))
-		 (search-forward filter-name)
-		 (setq filter (buffer-substring-no-properties (+ 2 (point)) (line-end-position))))
-	       (pcap-mode-set-tshark-filter (concat "'" filter "'")))
-      (error "Can't read dfilters file: %s" pcap-mode-dfilters-file))))
-
-(defun pcap-mode-clear-filter nil
-  (interactive)
-  (pcap-mode-set-tshark-filter ""))
 
 (defun pcap-mode--pcap-mode-cleanup ()
   "Cleanup function run whenever a pcap buffer is closed."
