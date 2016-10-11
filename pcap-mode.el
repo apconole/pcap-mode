@@ -376,8 +376,10 @@ Argument FILTER-VALUE corresponds to the exact set of filters passed to `pcap-mo
 
 (defun pcap-mode-set-named-filter (filter-name)
   "Choose a predefined filter and apply it.
-Filters are obtained from the `pcap-mode-dfilters-file'."
-  (interactive (list (ido-completing-read
+FILTER-NAME is the name of a filters obtained from the `pcap-mode-dfilters-file'."
+  (interactive (list (funcall (if (fboundp 'ido-completing-read)
+				  'ido-completing-read
+				'completing-read)
 		      "Filter name: "
 		      (if (file-readable-p pcap-mode-dfilters-file)
 			  (with-temp-buffer
