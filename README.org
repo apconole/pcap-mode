@@ -44,7 +44,8 @@ follows:
 | r        | pcap-mode-reload-file                     | Reload the current pcap buffer.                                               |
 | C-u f    | pcap-mode-set-tshark-single-packet-filter | Change the command line settings passed when running against a single packet. |
 | s        | pcap-mode-set-tshark-single-packet-filter | Same as 'C-u f' keybind.                                                      |
-| t        | pcap-mode-toggle-tcp-conversation-view    | Sets the tshark options to follow tcp streams.                                |
+| t        | pcap-mode-toggle-conversation-view        | Sets the tshark options to follow tcp streams.                                |
+| C-u t    | pcap-mode-toggle-conversation-view        | Sets the tshark options to follow a specific type of stream (prompted)        |
 | C-c C-d  | anonymous debug function                  | Display some debugging information                                            |
 
 The filters are "smart" and will remember previous values set, making 

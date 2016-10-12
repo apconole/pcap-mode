@@ -54,6 +54,7 @@
 ;; * 2016-09-21 (aconole) Add IPv6 support for TCP conversation tracking
 ;; * 2016-10-11 (vapniks) Add `pcap-mode-set-named-filter' and `pcap-mode-clear-filter'.
 ;;                        Also new option `pcap-mode-dfilters-file' and macro `pcap-mode-with-dfilters-file'.
+;; * 2016-10-25 (aconole) Conversation tracking for more than just tcp.
 ;;; Code:
 
 (defgroup pcap-mode nil "Major mode for viewing pcap files"
@@ -123,7 +124,8 @@ Lines of file must be in the following form:
 (defvar pcap-mode-map
   (let ((kmap (make-keymap)))
     (define-key kmap (kbd "<return>") 'pcap-mode-view-pkt-contents)
-    (define-key kmap (kbd "t") 'pcap-mode-toggle-tcp-conversation-view)
+    (define-key kmap (kbd "t") 'pcap-mode-toggle-conversation-view)
+    (define-key kmap (kbd "\C-u t") (lambda () (interactive) (pcap-mode-toggle-conversation-view 1)))
     (define-key kmap (kbd "f") 'pcap-mode-set-tshark-filter)
     (define-key kmap (kbd "F") 'pcap-mode-set-named-filter)
     (define-key kmap (kbd "c") 'pcap-mode-search-frames)
@@ -151,8 +153,8 @@ Lines of file must be in the following form:
 					   (shell-quote-argument pcap-search-text)))
                                  )))
 
-(defun pcap-mode--viewing-tcp-conversations ()
-  "Return t when viewing TCP conversations in the current buffer."
+(defun pcap-mode--viewing-conversations ()
+  "Return t when viewing conversations in the current buffer."
   (let ((line2 (save-excursion (goto-char (point-min))
                                (forward-line 1) (beginning-of-line)
                                (buffer-substring-no-properties
@@ -162,11 +164,13 @@ Lines of file must be in the following form:
                                (forward-line 2) (beginning-of-line)
                                (buffer-substring-no-properties
                                 (line-beginning-position)
-                                (line-end-position)))))
-    (if (or (string= line2 "TCP Conversations")
-            (string= line3 "TCP Conversations"))
-        t
-      nil)))
+                                (line-end-position))))
+        (regex-for-lines "^\\(TCP\\|UDP\\|Bluetooth\\|IEEE 802.11\\|IPv6\\|IP\\) Conversations$"))
+    (if (not (string-match regex-for-lines line2))
+        (if (not (string-match regex-for-lines line3))
+            nil
+          (substring line3 (match-beginning 1) (match-end 1)))
+      (substring line2 (match-beginning 1) (match-end 1)))))
 
 (defun pcap-mode--switches (arg)
   "Return ARG if it begins with '-', and nil otherwise."
@@ -180,44 +184,59 @@ Lines of file must be in the following form:
       nil
     arg))
 
-(defun pcap-mode-list-tcp-conversations ()
-  "List the tcp conversations within a PCAP."
+(defun pcap-mode-list-conversations (conversation)
+  "List the conversations within a PCAP."
   (interactive)
-  (pcap-mode-set-tshark-filter "-n -q -z conv,tcp"))
+  (pcap-mode-set-tshark-filter (format "-n -q -z conv,%s" conversation)))
 
-(defun pcap-mode-toggle-tcp-conversation-view ()
-  "List the tcp conversations within a PCAP, or clear the list."
-  (interactive)
-  (if (pcap-mode--viewing-tcp-conversations)
+(defun pcap-mode-toggle-conversation-view (&optional conversation)
+  "List the conversations within a PCAP, or clear the list."
+  (interactive "P")
+  (setq pcap-mode--conversation-list
+        (list "tcp" "udp" "sctp" "bluetooth" "ip" "ipv6" "wlan"))
+  (if (pcap-mode--viewing-conversations)
       (pcap-mode-set-tshark-filter "")
-    (pcap-mode-list-tcp-conversations)))
+    (let ((conv_arg (if conversation (funcall (if (fboundp 'ido-completing-read)
+                                                  'ido-completing-read
+                                                'completing-read)
+                                                "Conversation Type: "
+                                                pcap-mode--conversation-list
+                                                nil t "" nil "tcp") "tcp")))
+      (pcap-mode-list-conversations conv_arg))))
 
 (defun pcap-mode--connection-string (line)
-  "Formats a connection string LINE from a tcp conversation to a list.
+  "Formats a connection string LINE from a conversation to a list.
 The list will be (ip/ip6 source-ip source-port dest-ip dest-port)."
-  (if (eq (length (split-string line ":")) 3)
-      (append (list "ip") (split-string (car (split-string line)) ":")
-              (split-string (car (cddr (split-string line))) ":"))
-    (let* ((elmts (split-string line))
-           (ipsrc (butlast (split-string (car elmts) ":")))
-           (ipsrcp (last (split-string (car elmts) ":")))
-           (ipdst (butlast (split-string (car (cddr elmts)) ":")))
-           (ipdstp (last (split-string (car (cddr elmts)) ":")))
-           )
-      (append (list "ipv6")
-              (list (mapconcat 'identity ipsrc ":"))
-              ipsrcp
-              (list (mapconcat 'identity ipdst ":"))
-              ipdstp))))
+  (if (member (pcap-mode--viewing-conversations)
+              '("TCP" "UDP" "SCTP"))
+      (if (eq (length (split-string line ":")) 3)
+          (append (list "ip" (pcap-mode--viewing-conversations))
+                  (split-string (car (split-string line)) ":")
+                  (split-string (car (cddr (split-string line))) ":"))
+        (let* ((elmts (split-string line))
+               (ipsrc (butlast (split-string (car elmts) ":")))
+               (ipsrcp (last (split-string (car elmts) ":")))
+               (ipdst (butlast (split-string (car (cddr elmts)) ":")))
+               (ipdstp (last (split-string (car (cddr elmts)) ":")))
+               )
+          (append (list "ipv6"  (pcap-mode--viewing-conversations))
+                  (list (mapconcat 'identity ipsrc ":"))
+                  ipsrcp
+                  (list (mapconcat 'identity ipdst ":"))
+                  ipdstp)))
+    nil))
 
-(defun pcap-mode-follow-tcp-stream ()
+(defun pcap-mode-follow-conversation-stream ()
   "Set the output filter to follow a stream from the list of tcp conversations.
 Requires running pcap-list-tcp-conversations first."
   (interactive)
   (let* ((line (buffer-substring-no-properties
               (line-beginning-position)
               (line-end-position)))
-         (connection (pcap-mode--connection-string line)))
+         (connection (pcap-mode--connection-string line))
+         (addr-mask (if connection (car connection) nil))
+         (port-type (downcase (if connection (car (cdr connection)) nil)))
+         (filter-rest (if connection (cddr connection) nil)))
     (if connection
          (pcap-mode-set-tshark-filter
             (replace-regexp-in-string "== " "=="
@@ -225,15 +244,17 @@ Requires running pcap-list-tcp-conversations first."
                                                (list
                                                 "-Y \""
                                                 (format "%s.addr=="
-                                                        (car connection))
-                                                (car (cdr connection))
-                                                "&& tcp.port=="
-                                                (car (cddr connection))
+                                                        addr-mask)
+                                                (car filter-rest)
+                                                (format "&& %s.port=="
+                                                        port-type)
+                                                (car (cdr filter-rest))
                                                 (format "&& %s.addr=="
-                                                        (car connection))
-                                                (car (cdr (cddr connection)))
-                                                "&& tcp.port=="
-                                                (car (cddr (cddr connection)))
+                                                        addr-mask)
+                                                (car (cddr filter-rest))
+                                                (format "&& %s.port=="
+                                                        port-type)
+                                                (car (cdr (cddr filter-rest)))
                                                 "\"")
                                                " ")))
       (message "ERROR: Unable to determine connection information"))))
@@ -271,8 +292,8 @@ interface from which a capture should be started."
   "View a specific packet in the current packet capture.
 Invokes tshark  adding the `frame.number==` display filter."
   (interactive)
-  (if (pcap-mode--viewing-tcp-conversations)
-      (pcap-mode-follow-tcp-stream)
+  (if (pcap-mode--viewing-conversations)
+      (pcap-mode-follow-conversation-stream)
     (let ((packet-number (pcap-mode--packet-number-from-tshark-list)))
       (let ((cmd (pcap-mode--get-tshark-command (buffer-file-name)
                                                 (format "%s frame.number==%s"
